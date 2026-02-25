@@ -1,19 +1,18 @@
-# Multimodal RAG System
+# Domain-Specific Healthcare RAG
 
-A production-ready Retrieval-Augmented Generation (RAG) system supporting both text and image documents, utilizing local LLMs via Ollama, open-source embeddings, and FAISS.
+A lightweight, memory-optimized Retrieval-Augmented Generation application strictly tuned to analyze drug and medication schema structures on restricted hardware (like an 8GB RAM MacBook Air).
 
 ## Features
-- **Multimodal Ingestion**: Load and process PDFs, TXTs, and Images (PNG/JPG).
-- **Hybrid Search Ready**: Extensible architecture base.
-- **Local Inference**: Uses `Ollama` for generation (e.g., Llama 3, Mistral).
-- **Advanced Retrieval**: Uses `SentenceTransformers` for text, `CLIP` for images, and `CrossEncoder` for re-ranking.
-- **Optional Gemini Integration**: Modular support for Google Gemini API as a final reasoning step.
-- **Fast Vector Storage**: Powered by FAISS.
+- **Strict Pydantic JSON Ingestion**: Parses highly structured medication schemas.
+- **Section-Based Chunking**: Minimizes token overlap and forces data context explicitly (no sliding window token waste).
+- **CPU Optimized**: Forces CPU processing and limits vector batch sizes to prevent memory-spikes.
+- **Local Inference**: Uses `Ollama` for reasoning with generation restricted to strict safety boundaries.
+- **Fast Vector Storage**: Powered by FAISS with a lazy-loading IndexFlatIP index.
 
 ## Prerequisites
 1. Python 3.10+
 2. [Ollama](https://ollama.com/) installed and running locally.
-3. Pull an Ollama model, e.g., `ollama pull mistral` or `ollama pull llama3`.
+3. Pull the specific Mistral model: `ollama pull mistral`.
 
 ## Installation
 
@@ -22,28 +21,21 @@ A production-ready Retrieval-Augmented Generation (RAG) system supporting both t
    ```bash
    pip install -r requirements.txt
    ```
-3. Set up environment variables (if using Gemini):
-   ```bash
-   export GEMINI_API_KEY="your-api-key"
-   ```
+   *(Note: Ensure you have `pydantic` installed)*
 
 ## Usage
 
 ### Ingesting Data
-Place your PDF, text, and image files in a directory (e.g., `data/`). Then run:
+Place your structured `.json` medical drug files directly into the `data/` directory. Then run:
 
 ```bash
 python main.py --ingest data/
 ```
 
-### Querying
-Ask questions across your text and image context:
+### Querying System
+
+You can run an interactive query session to chat against the ingested medications:
 
 ```bash
-python main.py --query "What does the architecture diagram in the PDF show?"
-```
-
-To enable Gemini reasoning:
-```bash
-python main.py --query "Summarize the findings" --use-gemini
+python main.py --interactive
 ```

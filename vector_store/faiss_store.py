@@ -4,102 +4,78 @@ import faiss
 import numpy as np
 from typing import List, Dict, Any
 
-from utils.datatypes import DocumentChunk, Modality, QueryResult
-from utils.config import CONFIG
+from utils.datatypes import DocumentChunk, QueryResult
 from utils.logger import logger
 
-class VectorStore:
-    def __init__(self, index_path: str = None, metadata_path: str = None):
-        self.index_path_text = (index_path or CONFIG.vector_store_path) + "_text.index"
-        self.index_path_image = (index_path or CONFIG.vector_store_path) + "_image.index"
-        self.metadata_path = metadata_path or CONFIG.metadata_store_path
+class HealthcareVectorStore:
+    def __init__(self, index_path: str = "data/faiss_index.index", metadata_path: str = "data/metadata.json"):
+        self.index_path = index_path
+        self.metadata_path = metadata_path
+        self.dim = 384 # all-MiniLM-L6-v2 dimension
+        self.max_chunks = 1000
         
-        self.text_dim = CONFIG.text_embedding.dimension
-        self.image_dim = CONFIG.image_embedding.dimension
+        self.index = None # Lazy load
+        self.metadata_store: Dict[str, dict] = {}
+        self.current_id = 0
         
-
-        self.text_index = faiss.IndexFlatL2(self.text_dim)
-        self.image_index = faiss.IndexFlatL2(self.image_dim)
-        
-        self.metadata_store: Dict[int, dict] = {}
-        self.current_text_id = 0
-        self.current_image_id = 0
-        
-        self.load()
+    def _initialize_index(self):
+        if self.index is None:
+            if os.path.exists(self.index_path):
+                self.index = faiss.read_index(self.index_path)
+                logger.info(f"Loaded healthcare index with {self.index.ntotal} vectors.")
+            else:
+                self.index = faiss.IndexFlatIP(self.dim)
+                logger.info("Initialized new Healthcare IndexFlatIP.")
+                
+            if os.path.exists(self.metadata_path):
+                with open(self.metadata_path, 'r') as f:
+                    data = json.load(f)
+                    self.current_id = data.get("current_id", 0)
+                    self.metadata_store = data.get("store", {})
+                logger.info(f"Loaded healthcare metadata for {len(self.metadata_store)} chunks.")
 
     def add_documents(self, chunks: List[DocumentChunk]):
-        text_embeddings = []
-        text_ids = []
+        self._initialize_index()
         
-        image_embeddings = []
-        image_ids = []
-        
+        embeddings = []
         for chunk in chunks:
             if chunk.embedding is None:
                 continue
+                
+            if self.current_id >= self.max_chunks:
+                logger.warning(f"Maximum chunks ({self.max_chunks}) reached for Healthcare RAG.")
+                break
+                
+            embeddings.append(chunk.embedding)
             
-            if chunk.modality == Modality.TEXT:
-                text_embeddings.append(chunk.embedding)
-                text_ids.append(self.current_text_id)
+            chunk_dict = chunk.model_dump()
+            chunk_dict['index_type'] = 'text'
+            self.metadata_store[f"id_{self.current_id}"] = chunk_dict
+            self.current_id += 1
                 
-
-                chunk_dict = chunk.model_dump()
-                chunk_dict['index_type'] = 'text'
-                self.metadata_store[f"text_{self.current_text_id}"] = chunk_dict
-                self.current_text_id += 1
-                
-            elif chunk.modality == Modality.IMAGE:
-                image_embeddings.append(chunk.embedding)
-                image_ids.append(self.current_image_id)
-                
-
-                chunk_dict = chunk.model_dump()
-                chunk_dict['index_type'] = 'image'
-                self.metadata_store[f"image_{self.current_image_id}"] = chunk_dict
-                self.current_image_id += 1
-                
-        if text_embeddings:
-            vectors = np.array(text_embeddings, dtype=np.float32)
-            self.text_index.add(vectors)
-            logger.info(f"Added {len(text_embeddings)} text chunks to FAISS.")
-            
-        if image_embeddings:
-            vectors = np.array(image_embeddings, dtype=np.float32)
-            self.image_index.add(vectors)
-            logger.info(f"Added {len(image_embeddings)} image chunks to FAISS.")
+        if embeddings:
+            vectors = np.array(embeddings, dtype=np.float32)
+            faiss.normalize_L2(vectors) # Required for inner product to be cosine similarity
+            self.index.add(vectors)
+            logger.info(f"Added {len(embeddings)} healthcare chunks to FAISS.")
             
         self.save()
 
-    def search_text(self, query_embedding: List[float], top_k: int = 5) -> List[QueryResult]:
-        if self.text_index.ntotal == 0:
+    def search(self, query_embedding: List[float], top_k: int = 5) -> List[QueryResult]:
+        self._initialize_index()
+        
+        if self.index is None or self.index.ntotal == 0:
             return []
             
         vector = np.array([query_embedding], dtype=np.float32)
-        distances, indices = self.text_index.search(vector, top_k)
+        faiss.normalize_L2(vector)
+        distances, indices = self.index.search(vector, top_k)
         
         results = []
         for dist, idx in zip(distances[0], indices[0]):
             if idx == -1:
                 continue
-            key = f"text_{idx}"
-            if key in self.metadata_store:
-                chunk_data = self.metadata_store[key]
-                chunk = DocumentChunk(**chunk_data)
-                results.append(QueryResult(chunk=chunk, score=float(dist)))
-        return results
-
-    def search_image(self, query_embedding: List[float], top_k: int = 5) -> List[QueryResult]:
-        if self.image_index.ntotal == 0:
-            return []
-            
-        vector = np.array([query_embedding], dtype=np.float32)
-        distances, indices = self.image_index.search(vector, top_k)
-        
-        results = []
-        for dist, idx in zip(distances[0], indices[0]):
-            if idx == -1:
-                continue
-            key = f"image_{idx}"
+            key = f"id_{idx}"
             if key in self.metadata_store:
                 chunk_data = self.metadata_store[key]
                 chunk = DocumentChunk(**chunk_data)
@@ -107,29 +83,12 @@ class VectorStore:
         return results
 
     def save(self):
-        faiss.write_index(self.text_index, self.index_path_text)
-        faiss.write_index(self.image_index, self.index_path_image)
-        with open(self.metadata_path, 'w') as f:
-            json.dump({
-                "current_text_id": self.current_text_id,
-                "current_image_id": self.current_image_id,
-                "store": self.metadata_store
-            }, f)
-        logger.info("Vector store and metadata saved to disk.")
-
-    def load(self):
-        if os.path.exists(self.index_path_text):
-            self.text_index = faiss.read_index(self.index_path_text)
-            logger.info(f"Loaded text index with {self.text_index.ntotal} vectors.")
-            
-        if os.path.exists(self.index_path_image):
-            self.image_index = faiss.read_index(self.index_path_image)
-            logger.info(f"Loaded image index with {self.image_index.ntotal} vectors.")
-            
-        if os.path.exists(self.metadata_path):
-            with open(self.metadata_path, 'r') as f:
-                data = json.load(f)
-                self.current_text_id = data.get("current_text_id", 0)
-                self.current_image_id = data.get("current_image_id", 0)
-                self.metadata_store = data.get("store", {})
-            logger.info(f"Loaded metadata for {len(self.metadata_store)} total chunks.")
+        if self.index is not None:
+            os.makedirs(os.path.dirname(self.index_path), exist_ok=True)
+            faiss.write_index(self.index, self.index_path)
+            with open(self.metadata_path, 'w') as f:
+                json.dump({
+                    "current_id": self.current_id,
+                    "store": self.metadata_store
+                }, f)
+            logger.info("Healthcare vector store saved.")

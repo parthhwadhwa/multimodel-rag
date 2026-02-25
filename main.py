@@ -1,82 +1,89 @@
 import argparse
-import sys
-from typing import List
+import os
+import glob
 
 from utils.logger import logger
-from utils.datatypes import Modality
-from ingestion.loader import DocumentLoader
-from embedding.text_embedder import TextEmbedder
-from embedding.image_embedder import ImageEmbedder
-from vector_store.faiss_store import VectorStore
-from retrieval.retriever import Retriever
-from generation.ollama_client import OllamaClient
-from generation.gemini_client import GeminiClient
+from ingestion.chunker import HealthcareChunker
+from embedding.text_embedder import HealthcareEmbedder
+from vector_store.faiss_store import HealthcareVectorStore
+from retrieval.retriever import HealthcareRetriever
+from generation.ollama_client import HealthcareOllamaClient
+from generation.gemini_client import HealthcareGeminiClient
+
+def print_memory_usage():
+    logger.info("Memory tracking disabled (psutil not installed).")
 
 def ingest_data(data_dir: str):
-    logger.info("Initializing embedding models...")
-    text_embedder = TextEmbedder()
-    image_embedder = ImageEmbedder()
+    logger.info("Initializing Healthcare embedding model (CPU mode)...")
+    embedder = HealthcareEmbedder()
+    chunker = HealthcareChunker()
+    vstore = HealthcareVectorStore()
     
-    logger.info(f"Starting ingestion from {data_dir}...")
-    loader = DocumentLoader()
-    chunks = loader.load_directory(data_dir)
+    logger.info(f"Starting lightweight JSON ingestion from {data_dir}...")
+    json_files = glob.glob(os.path.join(data_dir, "*.json"))
     
-    if not chunks:
-        logger.warning("No documents loaded. Exiting.")
+    all_chunks = []
+    for jf in json_files:
+        if jf.endswith('metadata.json'):
+            continue 
+        chunks = chunker.chunk_json_file(jf)
+        all_chunks.extend(chunks)
+        
+    if not all_chunks:
+        logger.warning("No valid healthcare drugs loaded. Exiting.")
         return
         
-    logger.info("Generating embeddings...")
-    for chunk in chunks:
-        if chunk.modality == Modality.TEXT:
-            if chunk.text_content:
-                chunk.embedding = text_embedder.embed_text(chunk.text_content)
-        elif chunk.modality == Modality.IMAGE:
-            if chunk.image_path:
-                chunk.embedding = image_embedder.embed_image(chunk.image_path)
+    logger.info(f"Generated {len(all_chunks)} lightweight chunks. embedding in batches of 16...")
+    print_memory_usage()
+    
+    texts = [c.text_content for c in all_chunks]
+    embeddings = embedder.embed_texts(texts)
+    
+    for chunk, emb in zip(all_chunks, embeddings):
+        chunk.embedding = emb
                 
-    logger.info("Storing embeddings in FAISS...")
-    vstore = VectorStore()
-    vstore.add_documents(chunks)
+    logger.info("Storing embeddings in memory-efficient FAISS IndexFlatIP...")
+    vstore.add_documents(all_chunks)
     logger.info("Ingestion complete.")
+    print_memory_usage()
 
 def query_system(query: str, use_gemini: bool = False):
-    logger.info("Initializing models for querying...")
-    text_embedder = TextEmbedder()
-    image_embedder = ImageEmbedder()
-    vstore = VectorStore()
-    retriever = Retriever(vstore, text_embedder, image_embedder)
+    logger.info("Initializing domain-specific models for querying...")
+    embedder = HealthcareEmbedder()
+    vstore = HealthcareVectorStore()
+    retriever = HealthcareRetriever(vstore, embedder)
     
-
     results = retriever.retrieve(query)
     
     if not results:
         logger.warning("No context retrieved. System may be empty or query matches nothing.")
         
     print("\n" + "="*50)
-    print("RETRIEVED CONTEXT SUMMARY:")
+    print("RETRIEVED HEALTHCARE CONTEXT:")
     for i, res in enumerate(results):
         mod = res.chunk.modality.value.upper()
-        src = res.chunk.source_file
+        src = os.path.basename(res.chunk.source_file)
+        section = res.chunk.metadata.get('section', 'unknown')
         score = f"{res.score:.4f}"
-        print(f"[{i+1}] {mod} | {src} | Score: {score}")
+        print(f"[{i+1}] {mod} | {src} ({section}) | Score: {score}")
     print("="*50 + "\n")
     
-
     if use_gemini:
-        llm_client = GeminiClient()
-        print("Using GEMINI API for final reasoning...\n")
+        llm_client = HealthcareGeminiClient()
+        print("Using Google GEMINI API with Safety Constraints...\n")
     else:
-        llm_client = OllamaClient()
-        print(f"Using OLLAMA (Local) for final reasoning...\n")
+        llm_client = HealthcareOllamaClient()
+        print("Using OLLAMA (mistral) with Safety Constraints...\n")
         
     print("Answer: ", end="", flush=True)
     for chunk_text in llm_client.generate_stream(query, results):
         print(chunk_text, end="", flush=True)
     print("\n")
+    print_memory_usage()
 
 def interactive_loop(use_gemini: bool = False):
     print("\n" + "="*50)
-    print("Welcome to Multimodal RAG Interactive Mode!")
+    print("Welcome to Healthcare RAG")
     print("Type 'exit' or 'quit' to stop.")
     print("="*50 + "\n")
     while True:
@@ -93,11 +100,11 @@ def interactive_loop(use_gemini: bool = False):
             break
 
 def main():
-    parser = argparse.ArgumentParser(description="Multimodal RAG System")
-    parser.add_argument("--ingest", type=str, help="Directory containing PDF, TXT, and Image files to ingest.")
+    parser = argparse.ArgumentParser(description="Healthcare RAG System")
+    parser.add_argument("--ingest", type=str, help="Directory containing JSON files to ingest.")
     parser.add_argument("--query", type=str, help="The question you want to ask the system.")
-    parser.add_argument("--use-gemini", action="store_true", help="Use Gemini API instead of local Ollama for generation.")
     parser.add_argument("--interactive", action="store_true", help="Start an interactive chat loop.")
+    parser.add_argument("--use-gemini", action="store_true", help="Use Gemini API instead of local Ollama for generation.")
     
     args = parser.parse_args()
     

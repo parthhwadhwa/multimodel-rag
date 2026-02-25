@@ -1,13 +1,27 @@
-# Environment variables
-.env
-.env.local
-
-# Node
-node_modules/
-
-# Python
-venv/
-__pycache__/
-
 # Mac
 .DS_Store
+
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# FAISS index files
+*.index
+faiss_index*
+data/faiss_index.index
+
+# Metadata files
+metadata.json
+data/metadata.json
+
+# Virtual env
+env/
+venv/
+
+# Logs (optional but recommended)
+*.log

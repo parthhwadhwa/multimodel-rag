@@ -1,41 +1,60 @@
+import json
 from typing import List
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from utils.datatypes import DocumentChunk, Modality
 from utils.logger import logger
+from utils.schema import DrugInfo
 
-class TextChunker:
-    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-        self.splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap,
-            length_function=len,
-            is_separator_regex=False,
-        )
+class HealthcareChunker:
+    """
+    Memory-efficient section-based chunking.
+    No overlapping tokens, keeps each chunk strictly bound to a single section
+    from the structured JSON, ensuring chunks are lightweight (<400 tokens typically).
+    """
 
-    def chunk_document(self, text: str, source_file: str, base_metadata: dict = None) -> List[DocumentChunk]:
-        if base_metadata is None:
-            base_metadata = {}
-        
+    def chunk_json_file(self, file_path: str) -> List[DocumentChunk]:
         try:
-
-            text_chunks = self.splitter.split_text(text)
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
             
-
+            drug_info = DrugInfo(**data)
+            
+            source = drug_info.source
+            drug_name = drug_info.drug_name
+            
+            sections = {
+                "uses": drug_info.uses,
+                "dosage_info": drug_info.dosage_info,
+                "common_side_effects": drug_info.common_side_effects,
+                "serious_side_effects": drug_info.serious_side_effects,
+                "contraindications": drug_info.contraindications,
+                "warnings": drug_info.warnings,
+                "drug_class": drug_info.drug_class
+            }
+            
             doc_chunks = []
-            for i, chunk_text in enumerate(text_chunks):
-                metadata = base_metadata.copy()
-                metadata["chunk_index"] = i
+            for idx, (section_name, content) in enumerate(sections.items()):
+                if not content.strip():
+                    continue
+                    
+                metadata = {
+                    "drug": drug_name,
+                    "section": section_name,
+                    "source": source,
+                    "chunk_index": idx
+                }
+                
+                text_content = f"Drug: {drug_name}\nSection: {section_name.replace('_', ' ').title()}\nInformation: {content}"
                 
                 doc_chunk = DocumentChunk(
-                    source_file=source_file,
+                    source_file=file_path,
                     modality=Modality.TEXT,
-                    text_content=chunk_text,
+                    text_content=text_content,
                     metadata=metadata
                 )
                 doc_chunks.append(doc_chunk)
+                
             return doc_chunks
+                
         except Exception as e:
-            logger.error(f"Error chunking document {source_file}: {e}")
+            logger.error(f"Error chunking healthcare document {file_path}: {e}")
             return []

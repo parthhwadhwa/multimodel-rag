@@ -17,11 +17,13 @@ export default function Home() {
   const [response, setResponse] = useState("");
   const [modelUsed, setModelUsed] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   const handleSend = async (text: string) => {
     setQuery(text);
     setResponse("");
     setModelUsed("");
+    setIsError(false);
     setIsLoading(true);
 
     try {
@@ -36,6 +38,7 @@ export default function Home() {
         const detail = errData?.detail || `Request failed (HTTP ${res.status})`;
         setResponse(detail);
         setModelUsed("");
+        setIsError(true);
         return;
       }
 
@@ -45,21 +48,22 @@ export default function Home() {
     } catch (error) {
       console.error("API Error:", error);
       setResponse("Could not reach the MediRAG API. Make sure the server is running.");
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-[#fafafc] flex flex-col items-center selection:bg-neutral-200">
+    <main className="min-h-screen bg-[#fafafc] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white via-[#fafafc] to-[#fafafc] flex flex-col items-center selection:bg-neutral-200 text-neutral-900">
 
       {/* Spacer for vertical balance */}
       <div className="w-full h-[15vh] min-h-[80px]" />
 
-      <div className="w-full max-w-3xl px-6 flex flex-col items-center flex-1">
+      <div className="w-full max-w-3xl px-4 md:px-6 flex flex-col items-center flex-1">
 
         {/* Header & Toggle shrink when a response is loaded to keep focus on content */}
-        <div className={`flex flex-col items-center w-full transition-all duration-700 ease-in-out ${query ? 'opacity-0 h-0 overflow-hidden scale-95' : 'opacity-100 h-auto mb-8 scale-100'}`}>
+        <div className={`flex flex-col items-center w-full transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] origin-top ${query ? 'opacity-0 h-0 overflow-hidden scale-95 pointer-events-none' : 'opacity-100 h-auto mb-8 scale-100'}`}>
           <Header />
           <div className="mt-2 mb-4">
             <ModelToggle
@@ -71,7 +75,7 @@ export default function Home() {
         </div>
 
         {/* The Search Bar Input */}
-        <div className={`w-full transition-all duration-700 ease-in-out z-10 ${query ? 'sticky top-6 rounded-2xl shadow-xl' : ''}`}>
+        <div className={`w-full transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] z-10 ${query ? 'sticky top-6 rounded-2xl shadow-xl' : ''}`}>
           <ChatInput onSend={handleSend} isLoading={isLoading} />
         </div>
 
@@ -80,7 +84,7 @@ export default function Home() {
           @keyframes slideUpFade {
             0% {
               opacity: 0;
-              transform: translateY(12px);
+              transform: translateY(16px);
             }
             100% {
               opacity: 1;
@@ -103,6 +107,8 @@ export default function Home() {
             query={query}
             response={response}
             modelUsed={modelUsed}
+            isLoading={isLoading}
+            isError={isError}
           />
         </div>
 

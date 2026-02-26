@@ -15,13 +15,13 @@ interface ModelToggleProps {
 export default function ModelToggle({ selected, onChange, disabled }: ModelToggleProps) {
     return (
         <div
-            className={`relative inline-flex items-center bg-neutral-100/80 backdrop-blur-md p-1 rounded-full border border-neutral-200/50 shadow-inner transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}
+            className={`relative inline-flex items-center bg-neutral-100/60 backdrop-blur-xl p-1 rounded-full border border-black/[0.04] shadow-[0_2px_8px_inset_rgba(0,0,0,0.02)] transition-opacity duration-300 ${disabled ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}
             role="radiogroup"
             aria-label="Select AI Model"
         >
             {/* Sliding Underlay */}
             <div
-                className="absolute h-[calc(100%-8px)] rounded-full bg-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                className="absolute h-[calc(100%-8px)] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]"
                 style={{
                     width: "100px",
                     left: selected === "ollama" ? "4px" : "108px"
@@ -35,8 +35,7 @@ export default function ModelToggle({ selected, onChange, disabled }: ModelToggl
                 aria-checked={selected === "ollama"}
                 onClick={() => onChange("ollama")}
                 title={IS_PRODUCTION ? "Ollama is unavailable in the deployed environment" : undefined}
-                className={`relative z-10 w-[100px] py-1.5 text-[13px] font-medium transition-colors duration-200 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 ${
-                    IS_PRODUCTION
+                className={`relative z-10 w-[100px] py-1.5 text-[13px] font-medium transition-colors duration-200 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 ${IS_PRODUCTION
                         ? "text-neutral-400 cursor-not-allowed"
                         : selected === "ollama" ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-700"
                     }`}

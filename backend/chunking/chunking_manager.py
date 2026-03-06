@@ -5,9 +5,9 @@ from typing import List, Optional
 
 from sentence_transformers import SentenceTransformer
 
-from backend.datatypes import DocumentChunk, DocumentSection, ChunkingStrategy
-from backend.config import CONFIG
-from backend.logger import logger
+from backend.utils.datatypes import DocumentChunk, DocumentSection, ChunkingStrategy
+from backend.utils.config import CONFIG
+from backend.utils.logger import logger
 from backend.chunking.recursive_chunker import RecursiveChunker
 from backend.chunking.token_chunker import TokenChunker
 from backend.chunking.markdown_chunker import MarkdownChunker

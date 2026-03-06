@@ -6,10 +6,10 @@ import re
 
 from rank_bm25 import BM25Okapi
 
-from backend.datatypes import DocumentChunk, RetrievalResult
+from backend.utils.datatypes import DocumentChunk, RetrievalResult
 from backend.vectorstore.chroma_store import ChromaStore
-from backend.config import CONFIG
-from backend.logger import logger
+from backend.utils.config import CONFIG
+from backend.utils.logger import logger
 
 
 class BM25Retriever:

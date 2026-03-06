@@ -7,13 +7,13 @@ import operator
 
 from langgraph.graph import StateGraph, END
 
-from backend.datatypes import RetrievalResult, QueryState
+from backend.utils.datatypes import RetrievalResult, QueryState
 from backend.agents.llm_client import LLMClient
 from backend.agents.safety_guard import SafetyGuard
 from backend.retrieval.hybrid_retriever import HybridRetriever
 from backend.retrieval.query_expander import QueryExpander
-from backend.config import CONFIG
-from backend.logger import logger
+from backend.utils.config import CONFIG
+from backend.utils.logger import logger
 
 
 class AgentState(TypedDict):

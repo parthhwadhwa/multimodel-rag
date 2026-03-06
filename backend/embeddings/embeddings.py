@@ -6,8 +6,8 @@ from typing import List, Optional
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-from backend.config import CONFIG
-from backend.logger import logger
+from backend.utils.config import CONFIG
+from backend.utils.logger import logger
 
 
 class EmbeddingEngine:

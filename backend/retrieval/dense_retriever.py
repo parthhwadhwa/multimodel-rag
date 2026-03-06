@@ -3,10 +3,10 @@ Dense Retriever — vector similarity search through ChromaDB.
 """
 from typing import List, Optional, Dict, Any
 
-from backend.datatypes import RetrievalResult
+from backend.utils.datatypes import RetrievalResult
 from backend.vectorstore.chroma_store import ChromaStore
 from backend.embeddings.embeddings import EmbeddingEngine
-from backend.config import CONFIG
+from backend.utils.config import CONFIG
 
 
 class DenseRetriever:

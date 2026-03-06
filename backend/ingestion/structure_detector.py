@@ -5,8 +5,8 @@ from preprocessed Markdown-like text.
 import re
 from typing import List
 
-from backend.datatypes import DocumentPage, DocumentSection
-from backend.logger import logger
+from backend.utils.datatypes import DocumentPage, DocumentSection
+from backend.utils.logger import logger
 
 
 class StructureDetector:

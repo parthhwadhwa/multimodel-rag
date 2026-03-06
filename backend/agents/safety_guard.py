@@ -4,7 +4,7 @@ Safety Guard — Jailbreak prevention, prompt injection detection, and input san
 import re
 from typing import Tuple
 
-from backend.logger import logger
+from backend.utils.logger import logger
 
 
 # Patterns that indicate jailbreak or prompt injection attempts

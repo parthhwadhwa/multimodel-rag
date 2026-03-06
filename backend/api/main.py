@@ -12,9 +12,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from backend.config import CONFIG, DOCUMENTS_DIR, VECTOR_STORE_DIR
-from backend.logger import logger
-from backend.datatypes import ChunkingStrategy
+from backend.utils.config import CONFIG, DOCUMENTS_DIR, VECTOR_STORE_DIR
+from backend.utils.logger import logger
+from backend.utils.datatypes import ChunkingStrategy
 
 # Pipeline imports
 from backend.ingestion.pdf_loader import PDFLoader

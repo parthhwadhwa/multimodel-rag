@@ -5,9 +5,9 @@ import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-from backend.datatypes import RetrievalResult
-from backend.config import CONFIG
-from backend.logger import logger
+from backend.utils.datatypes import RetrievalResult
+from backend.utils.config import CONFIG
+from backend.utils.logger import logger
 
 
 class RAGEvaluator:

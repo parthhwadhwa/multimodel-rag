@@ -6,8 +6,8 @@ from typing import List
 
 import fitz  # PyMuPDF
 
-from backend.datatypes import DocumentPage
-from backend.logger import logger
+from backend.utils.datatypes import DocumentPage
+from backend.utils.logger import logger
 
 
 class PDFLoader:

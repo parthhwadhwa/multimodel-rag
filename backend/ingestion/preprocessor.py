@@ -5,8 +5,8 @@ preserving formatting cues as Markdown.
 import re
 from typing import List, Dict, Any
 
-from backend.datatypes import DocumentPage
-from backend.logger import logger
+from backend.utils.datatypes import DocumentPage
+from backend.utils.logger import logger
 
 
 class TextPreprocessor:

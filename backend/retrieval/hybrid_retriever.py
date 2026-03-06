@@ -5,11 +5,11 @@ with Reciprocal Rank Fusion (RRF).
 from typing import List, Dict
 from collections import defaultdict
 
-from backend.datatypes import RetrievalResult
+from backend.utils.datatypes import RetrievalResult
 from backend.retrieval.dense_retriever import DenseRetriever
 from backend.retrieval.bm25_retriever import BM25Retriever
-from backend.config import CONFIG
-from backend.logger import logger
+from backend.utils.config import CONFIG
+from backend.utils.logger import logger
 
 
 class HybridRetriever:

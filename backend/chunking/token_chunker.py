@@ -5,8 +5,8 @@ from typing import List
 
 from langchain_text_splitters import TokenTextSplitter as LCTokenSplitter
 
-from backend.datatypes import DocumentChunk, DocumentSection
-from backend.config import CONFIG
+from backend.utils.datatypes import DocumentChunk, DocumentSection
+from backend.utils.config import CONFIG
 
 
 class TokenChunker:

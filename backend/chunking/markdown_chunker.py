@@ -5,7 +5,7 @@ from typing import List
 
 from langchain_text_splitters import MarkdownHeaderTextSplitter as LCMarkdownSplitter
 
-from backend.datatypes import DocumentChunk, DocumentSection
+from backend.utils.datatypes import DocumentChunk, DocumentSection
 
 
 class MarkdownChunker:

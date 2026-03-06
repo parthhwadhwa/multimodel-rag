@@ -6,9 +6,9 @@ from typing import Generator, List, Dict, Any
 
 import requests
 
-from backend.datatypes import RetrievalResult
-from backend.config import CONFIG
-from backend.logger import logger
+from backend.utils.datatypes import RetrievalResult
+from backend.utils.config import CONFIG
+from backend.utils.logger import logger
 
 
 SYSTEM_PROMPT = """You are a medical document intelligence assistant. Your role is to provide accurate, factual information based ONLY on the provided document context.

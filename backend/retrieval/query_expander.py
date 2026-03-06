@@ -8,10 +8,10 @@ from collections import defaultdict
 
 import requests
 
-from backend.datatypes import RetrievalResult
+from backend.utils.datatypes import RetrievalResult
 from backend.retrieval.hybrid_retriever import HybridRetriever
-from backend.config import CONFIG
-from backend.logger import logger
+from backend.utils.config import CONFIG
+from backend.utils.logger import logger
 
 
 class QueryExpander:

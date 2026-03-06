@@ -8,9 +8,9 @@ from typing import List
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-from backend.datatypes import DocumentChunk, DocumentSection
-from backend.config import CONFIG
-from backend.logger import logger
+from backend.utils.datatypes import DocumentChunk, DocumentSection
+from backend.utils.config import CONFIG
+from backend.utils.logger import logger
 
 
 class SemanticChunker:

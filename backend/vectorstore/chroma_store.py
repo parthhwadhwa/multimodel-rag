@@ -8,9 +8,9 @@ from typing import List, Dict, Any, Optional
 import chromadb
 from chromadb.config import Settings
 
-from backend.datatypes import DocumentChunk, RetrievalResult
-from backend.config import CONFIG
-from backend.logger import logger
+from backend.utils.datatypes import DocumentChunk, RetrievalResult
+from backend.utils.config import CONFIG
+from backend.utils.logger import logger
 
 
 class ChromaStore:

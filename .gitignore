@@ -1,27 +1,25 @@
-# Mac
-.DS_Store
-
-# Environment variables
+# Environment
 .env
-
-# Python
+venv/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
 
-# FAISS index files
-*.index
-faiss_index*
-data/faiss_index.index
+# Vector store data
+vector_store/
 
-# Metadata files
-metadata.json
-data/metadata.json
+# Node
+node_modules/
+.next/
+dist/
 
-# Virtual env
-env/
-venv/
+# IDE
+.vscode/
+.idea/
 
-# Logs (optional but recommended)
-*.log
+# OS
+.DS_Store
+Thumbs.db
+
+# Builds
+*.egg-info/
+build/

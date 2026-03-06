@@ -1,125 +1,184 @@
-# MediRAG: Domain-Specific Medical Retrieval-Augmented Generation
+# DocIntel — Document Intelligence System
 
-## Problem Statement
-General-purpose Large Language Models (LLMs) are prone to hallucination, which poses a severe risk in the healthcare and pharmacology domains. When users search for drug information, side effects, or contraindications, accuracy and context-grounding are critical. MediRAG addresses this by strictly grounding its generations in a verified, structured dataset of pharmaceutical information, ensuring that AI-driven responses are accurate, safe, and explicitly constrained from providing personalized medical advice or diagnoses.
+A production-grade RAG system for medical document search and analysis. Processes PDF documents through a complete ingestion pipeline, indexes them in ChromaDB with hybrid retrieval (dense vectors + BM25 + RRF), and generates grounded answers using Phi-3 Mini via Ollama.
 
-## System Architecture
+## Architecture
 
-```text
-[ User Query ] 
-      │
-      ▼
-[ Embedding Model ] (all-MiniLM-L6-v2) ──► [ FAISS Vector Store ]
-                                                  │
-                                                  ▼
-[ Context Retrieval ] ◄── (Top-3 relevant chunks with metadata)
-      │
-      ▼
-[ Generation Guardrails ] (Safety Prompt Injection)
-      │
-      ▼
-[ LLM Generation ] (Ollama Mistral 7B / Gemini)
-      │
-      ▼
-[ Final Response ]
+```
+┌─────────────┐    ┌──────────────────────────────────────────────┐
+│   React UI  │───▶│  FastAPI Backend                             │
+│  (Vite)     │    │  ┌─────────┐  ┌────────┐  ┌──────────────┐  │
+│  • Chat     │    │  │ Safety  │─▶│ Agent  │─▶│  Phi-3 Mini  │  │
+│  • Upload   │    │  │ Guard   │  │(Graph) │  │  (Ollama)    │  │
+│  • Sources  │    │  └─────────┘  └───┬────┘  └──────────────┘  │
+│  • Model    │    │                   │                          │
+│    Info     │    │  ┌────────────────▼──────────────────────┐   │
+└─────────────┘    │  │     Hybrid Retriever                  │   │
+                   │  │  ┌─────────┐  ┌───────┐  ┌────────┐  │   │
+                   │  │  │ Dense   │  │ BM25  │  │  RRF   │  │   │
+                   │  │  │ Search  │  │Search │  │ Fusion │  │   │
+                   │  │  └────┬────┘  └───┬───┘  └────────┘  │   │
+                   │  └───────┼───────────┼──────────────────┘   │
+                   │          │           │                       │
+                   │  ┌───────▼───────────▼──────────────────┐   │
+                   │  │  ChromaDB + all-MiniLM-L6-v2         │   │
+                   │  └──────────────────────────────────────┘   │
+                   └──────────────────────────────────────────────┘
 ```
 
-## Tech Stack
-*   **Language:** Python
-*   **Embeddings:** `sentence-transformers` (`all-MiniLM-L6-v2`, 384-dimensional)
-*   **Vector Database:** FAISS (`IndexFlatIP`, CPU-bound)
-*   **LLM Inference:** Ollama (Mistral 7B quantized) / Google Gemini API (Optional)
-*   **Data Models:** Pydantic
+## Features
 
-## Dataset Design
-The system relies on a curated dataset of over 50 common drugs. Rather than ingesting unstructured text, the data is modeled using strict JSON schemas. 
-Each drug record contains specific, isolated fields:
-*   `uses`
-*   `dosage_info`
-*   `common_side_effects`
-*   `serious_side_effects`
-*   `contraindications`
-*   `warnings`
+| Component | Details |
+|-----------|---------|
+| **PDF Ingestion** | PyMuPDF extraction → preprocessing → structure detection |
+| **Chunking** | 5 strategies: recursive, token, markdown, semantic, parent-child |
+| **Embeddings** | `all-MiniLM-L6-v2` (384 dims) via sentence-transformers |
+| **Vector DB** | ChromaDB with cosine similarity |
+| **Retrieval** | Dense + BM25 hybrid with Reciprocal Rank Fusion |
+| **Query Expansion** | HyDE + MultiQuery via LLM |
+| **LLM** | Phi-3 Mini (3.8B) via Ollama, temperature 0.2 |
+| **Agent** | LangGraph state machine: safety → retrieve → [expand] → generate |
+| **Security** | Jailbreak detection, prompt injection prevention |
+| **Evaluation** | Precision@k, Recall@k, MRR, context relevance |
+| **Frontend** | React (Vite) with SSE streaming, citations, document upload |
 
-## Retrieval & Generation Pipeline
-
-### Section-Based Chunking
-Instead of using fixed-token sliding windows which often split semantic context or merge irrelevant sections, the system employs **Section-Based Chunking**. Each specific field in the JSON schema (e.g., `contraindications` for Ibuprofen) acts as an isolated, self-contained document chunk. This ensures that the context retrieved is highly granular and semantically coherent.
-
-### Metadata-Aware Retrieval
-The retriever leverages the structural metadata of the chunks. It retrieves only the Top-3 most relevant context blocks to minimize noise and improve generation speed. Furthermore, keyword boosting is applied dynamically; queries containing terms like "side effects" or "adverse" will optionally boost the retrieval scores of chunks specifically labeled with the `serious_side_effects` or `common_side_effects` metadata.
-
-## Safety & Guardrails
-A core tenet of this system is safety. The LLM is strictly prompted to:
-1. Provide general, educational information based **only** on the retrieved context.
-2. Refuse requests for diagnosis or personalized medical advice.
-3. Explicitly state when information is unavailable rather than attempting to guess or hallucinate.
-4. Always recommend consulting a licensed healthcare professional.
-
-## Performance Optimization
-The architecture is designed for extreme efficiency and low resource footprint:
-*   **CPU-Bound Embeddings:** Embedding generation is strictly enforced on the CPU using a lightweight model (`all-MiniLM-L6-v2`).
-*   **Batched Inference:** Vector embeddings are processed in small, fixed batch sizes to prevent memory spiking during ingestion.
-*   **Inner Product Search:** FAISS utilizes Inner Product (`IndexFlatIP`) coupled with normalized vectors to perform extremely fast cosine similarity searches without the overhead of heavy index structures.
-*   **Token Caps:** The system strictly limits max output tokens and enforces low-temperature generation (`temperature=0.2`) to ensure deterministic and concise responses.
-
-## Example Query & Output
-
-**User Query:** "What are the common side effects of amoxicillin?"
-
-**System Output:**
-> Based on the provided clinical data, the common side effects of amoxicillin include nausea, vomiting, diarrhea, and mild skin rash. 
-> 
-> *Disclaimer: This information is for educational purposes only. It is not intended to be a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or qualified health provider with any questions you may have regarding a medical condition.*
-
-## Installation & Run Instructions
+## Quick Start
 
 ### Prerequisites
-1. Python 3.10+
-2. [Ollama](https://ollama.com/) installed and running locally.
-3. Install the Mistral model: `ollama pull mistral`
 
-### Setup
-1. Clone the repository and navigate to the project root.
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+- Python 3.10+
+- Node.js 18+
+- [Ollama](https://ollama.com) installed
 
-### Execution
-1. **Ingest the Dataset:**
-   Parses the JSON schemas, generates embeddings, and builds the FAISS index.
-   ```bash
-   python main.py --ingest data/
-   ```
+### 1. Pull the LLM model
 
-2. **Run Interactive Query Mode:**
-   Starts the interactive CLI session default to local Ollama.
-   ```bash
-   python main.py --interactive
-   ```
+```bash
+ollama pull phi3:mini
+```
 
-   *(Optional) Run using Gemini for generation:*
-   ```bash
-   python main.py --interactive --use-gemini
-   ```
+### 2. Install backend dependencies
 
-3. **Run the Full Web Application (Frontend + Backend):**
-   To experience the premium Apple-inspired Minimal UI, you must run both the API bridge and the Next.js frontend.
+```bash
+cd multimodal_rag
+pip install -r requirements.txt
+```
 
-   **Terminal 1 (Start the Backend API):**
-   ```bash
-   python api.py
-   ```
+### 3. Convert drug data to PDFs
 
-   **Terminal 2 (Start the Web Frontend):**
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-   Open `http://localhost:3000` in your browser to interact with the system.
+```bash
+python scripts/convert_json_to_pdf.py
+```
 
-## Future Improvements
-*   **Frontend Interface:** A full Next.js web application is currently under development to provide a clean, accessible UI for healthcare professionals and users.
-*   **Cloud Deployment:** Containerizing the backend pipeline (FastAPI/Docker) and migrating vector storage to a managed database (e.g., Pinecone or Postgres pgvector) for scalable cloud hosting.
-*   **Expanded Knowledge Base:** Automating the data ingestion pipeline to continuously fetch and structure updated pharmaceutical data from authoritative sources (e.g., OpenFDA API).
+### 4. Start the backend
+
+```bash
+python -m backend.api
+```
+
+The API starts at `http://localhost:8000`. Visit `/docs` for the Swagger UI.
+
+### 5. Ingest documents
+
+```bash
+curl -X POST http://localhost:8000/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"chunking_strategy": "recursive"}'
+```
+
+### 6. Start the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+## Project Structure
+
+```
+multimodal_rag/
+├── backend/
+│   ├── config.py              # Central configuration
+│   ├── datatypes.py           # Data models
+│   ├── logger.py              # Logging
+│   ├── api.py                 # FastAPI application
+│   ├── ingestion/
+│   │   ├── pdf_loader.py      # PyMuPDF PDF extraction
+│   │   ├── preprocessor.py    # Text cleaning & formatting
+│   │   └── structure_detector.py  # Section detection
+│   ├── chunking/
+│   │   ├── chunking_manager.py    # Strategy factory
+│   │   ├── recursive_chunker.py
+│   │   ├── token_chunker.py
+│   │   ├── markdown_chunker.py
+│   │   ├── semantic_chunker.py
+│   │   └── parent_child_chunker.py
+│   ├── embeddings/
+│   │   └── embeddings.py      # all-MiniLM-L6-v2
+│   ├── vectorstore/
+│   │   └── chroma_store.py    # ChromaDB persistent store
+│   ├── retrieval/
+│   │   ├── dense_retriever.py
+│   │   ├── bm25_retriever.py
+│   │   ├── hybrid_retriever.py    # RRF fusion
+│   │   └── query_expander.py      # HyDE + MultiQuery
+│   ├── agents/
+│   │   ├── llm_client.py      # Phi-3 Mini via Ollama
+│   │   ├── safety_guard.py    # Jailbreak prevention
+│   │   └── rag_agent.py       # LangGraph agent
+│   └── evaluation/
+│       └── evaluator.py       # Metrics pipeline
+├── scripts/
+│   └── convert_json_to_pdf.py # JSON → PDF converter
+├── documents/                 # PDF knowledge base
+├── data/                      # Original JSON drug files
+├── vector_store/              # ChromaDB persistence
+├── frontend/                  # React (Vite) app
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── components/
+│   │       ├── ChatArea.jsx
+│   │       ├── InputBar.jsx
+│   │       └── Sidebar.jsx
+│   └── package.json
+└── requirements.txt
+```
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | System health check |
+| `POST` | `/query` | Query (non-streaming) |
+| `POST` | `/query/stream` | Query with SSE streaming |
+| `POST` | `/upload` | Upload PDF (auto-ingested) |
+| `POST` | `/ingest` | Batch ingest all PDFs |
+| `GET` | `/documents` | List documents |
+| `GET` | `/model-info` | Model & system config |
+
+## Configuration
+
+Key settings in `backend/config.py`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `ollama.model` | `phi3:mini` | LLM model |
+| `ollama.temperature` | `0.2` | Generation temperature |
+| `embedding.model_name` | `all-MiniLM-L6-v2` | Embedding model |
+| `chunking.default_strategy` | `recursive` | Default chunking |
+| `chunking.chunk_size` | `512` | Chunk size |
+| `retrieval.top_k` | `5` | Results per query |
+| `retrieval.hyde_enabled` | `true` | Enable HyDE expansion |
+
+## Environment Variables
+
+Create a `.env` file:
+
+```env
+# Optional: LangSmith tracing
+LANGSMITH_API_KEY=your_key
+LANGSMITH_TRACING=true
+```

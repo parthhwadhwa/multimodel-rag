@@ -1,13 +1,18 @@
-# Environment
-.env
+# Python
 venv/
 __pycache__/
 *.pyc
 
-# Vector store data
-vector_store/
+# Environment variables
+.env
 
-# Node
+# Vector database data
+vector_store/chroma_db/
+*.sqlite3
+*.db
+*.parquet
+
+# Node / Next.js
 node_modules/
 .next/
 dist/
@@ -16,10 +21,10 @@ dist/
 .vscode/
 .idea/
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
-# Builds
+# Python build files
 *.egg-info/
 build/

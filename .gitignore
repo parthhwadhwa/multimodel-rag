@@ -28,3 +28,4 @@ Thumbs.db
 # Python build files
 *.egg-info/
 build/
+.vscode/

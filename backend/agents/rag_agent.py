@@ -122,7 +122,7 @@ def build_rag_agent(
         """Generate response using retrieved context."""
         results = [
             RetrievalResult(
-                chunk=__import__("backend.datatypes", fromlist=["DocumentChunk"]).DocumentChunk(
+                chunk=__import__("backend.utils.datatypes", fromlist=["DocumentChunk"]).DocumentChunk(
                     id=c["id"],
                     text=c["text"],
                     metadata=c["metadata"],

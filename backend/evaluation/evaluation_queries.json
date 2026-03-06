@@ -1,0 +1,22 @@
+[
+    {
+        "query": "What is albuterol used for?",
+        "relevant_doc": "albuterol.pdf"
+    },
+    {
+        "query": "What are the common side effects of ibuprofen?",
+        "relevant_doc": "ibuprofen.pdf"
+    },
+    {
+        "query": "What is the recommended dosage for metformin?",
+        "relevant_doc": "metformin.pdf"
+    },
+    {
+        "query": "Are there any contraindications for lisinopril?",
+        "relevant_doc": "lisinopril.pdf"
+    },
+    {
+        "query": "What are the serious warnings associated with amoxicillin?",
+        "relevant_doc": "amoxicillin.pdf"
+    }
+]

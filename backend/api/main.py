@@ -117,13 +117,16 @@ async def query_endpoint(req: QueryRequest):
     try:
         result = rag_agent.query(req.question)
         citations = result.get("citations", [])
-        confidence = sum(c["score"] for c in citations) / len(citations) if citations else 0.0
+        avg_sim = sum(c["score"] for c in citations) / len(citations) if citations else 0.0
+        normalized_confidence = min(1.0, avg_sim * 30)
+        confidence = round(normalized_confidence * 100, 1)
+
         return QueryResponse(
             answer=result["answer"],
             citations=citations,
             model=CONFIG.ollama.model,
             retrieval_method=result.get("retrieval_method", "hybrid"),
-            confidence_score=round(confidence, 4),
+            confidence_score=confidence,
         )
     except Exception as e:
         logger.error(f"Query failed: {e}")
@@ -150,6 +153,12 @@ async def query_stream_endpoint(req: QueryRequest):
         async def event_stream():
             # Send citations first
             yield f"data: {json.dumps({'type': 'citations', 'data': citations})}\n\n"
+            
+            # Send normalized confidence
+            avg_sim = sum(c["score"] for c in citations) / len(citations) if citations else 0.0
+            normalized = min(1.0, avg_sim * 30)
+            yield f"data: {json.dumps({'type': 'confidence', 'data': round(normalized * 100, 1)})}\n\n"
+            
             # Stream tokens
             for token in stream_or_error:
                 yield f"data: {json.dumps({'type': 'token', 'data': token})}\n\n"

@@ -36,7 +36,7 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
             className={`w-full max-w-2xl mx-auto relative group transition-all duration-300 ${isLoading ? "opacity-70 pointer-events-none" : "hover:scale-[1.005] focus-within:scale-[1.01]"}`}
         >
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                <svg className="w-5 h-5 text-neutral-400 group-focus-within:text-neutral-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-slate-400 group-focus-within:text-slate-300 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
             </div>
@@ -49,7 +49,7 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
                 placeholder="Ask about a medication, side effects, or contraindications..."
-                className="w-full py-4 pl-12 pr-14 bg-white/80 backdrop-blur-md border border-neutral-200/60 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-[15px] text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:ring-[3px] focus:ring-slate-100 focus:border-slate-300 transition-all duration-300 disabled:bg-neutral-50/50"
+                className="w-full py-4 pl-12 pr-14 bg-[#1e293b]/80 backdrop-blur-md border border-[#334155]/60 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] text-[15px] text-[#f8fafc] placeholder:text-slate-400 focus:outline-none focus:ring-[3px] focus:ring-slate-700 focus:border-slate-500 transition-all duration-300 disabled:bg-[#1e293b]/50"
                 aria-label="Search medication information"
             />
 
@@ -57,7 +57,7 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
                 <button
                     type="submit"
                     disabled={!val.trim() || isLoading}
-                    className="p-2 mr-1 rounded-xl text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100/50 disabled:opacity-30 disabled:hover:text-neutral-400 disabled:hover:bg-transparent transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-200"
+                    className="p-2 mr-1 rounded-xl text-slate-400 hover:text-white hover:bg-[#334155]/50 disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-transparent transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
                     aria-label="Send Query"
                 >
                     {isLoading ? (

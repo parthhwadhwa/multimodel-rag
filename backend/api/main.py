@@ -75,6 +75,7 @@ class QueryResponse(BaseModel):
     citations: list
     model: str
     retrieval_method: str
+    confidence_score: float = 0.0
 
 
 class IngestRequest(BaseModel):
@@ -115,11 +116,14 @@ async def query_endpoint(req: QueryRequest):
 
     try:
         result = rag_agent.query(req.question)
+        citations = result.get("citations", [])
+        confidence = sum(c["score"] for c in citations) / len(citations) if citations else 0.0
         return QueryResponse(
             answer=result["answer"],
-            citations=result["citations"],
+            citations=citations,
             model=CONFIG.ollama.model,
             retrieval_method=result.get("retrieval_method", "hybrid"),
+            confidence_score=round(confidence, 4),
         )
     except Exception as e:
         logger.error(f"Query failed: {e}")

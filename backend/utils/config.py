@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DOCUMENTS_DIR = BASE_DIR / "documents"
-VECTOR_STORE_DIR = BASE_DIR / "vector_store"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DOCUMENTS_DIR = BASE_DIR / "documents" / "drugs"
+VECTOR_STORE_DIR = BASE_DIR / "multimodal_rag" / "vector_store"
 DATA_DIR = BASE_DIR / "data"
 
 

@@ -65,6 +65,26 @@ USER QUESTION:
 ANSWER (cite sources using [Source N] format):"""
         return prompt
 
+    def _calculate_confidence_and_sources(self, results: List[RetrievalResult]) -> str:
+        """Calculate confidence score and extract unique sources."""
+        if not results:
+            return "\n\nConfidence: 0.00\n\nSources:\nNone"
+            
+        avg_score = sum(r.score for r in results) / len(results)
+        
+        seen = set()
+        sources = []
+        for r in results:
+            doc = r.chunk.metadata.get("document_name", "Unknown")
+            page = r.chunk.metadata.get("page_number", "?")
+            src_str = f"* {doc} (page {page})"
+            if src_str not in seen:
+                seen.add(src_str)
+                sources.append(src_str)
+                
+        sources_str = "\n".join(sources)
+        return f"\n\nConfidence: {avg_score:.4f}\n\nSources:\n\n{sources_str}"
+
     def generate(self, query: str, results: List[RetrievalResult]) -> str:
         """Generate a complete response (non-streaming)."""
         prompt = self.build_rag_prompt(query, results)
@@ -85,7 +105,9 @@ ANSWER (cite sources using [Source N] format):"""
                 timeout=120,
             )
             response.raise_for_status()
-            return response.json().get("response", "")
+            base_answer = response.json().get("response", "")
+            footer = self._calculate_confidence_and_sources(results)
+            return f"Answer: {base_answer}{footer}"
         except Exception as e:
             logger.error(f"LLM generation failed: {e}")
             return f"Error: Unable to generate response. {e}"
@@ -114,6 +136,8 @@ ANSWER (cite sources using [Source N] format):"""
             )
             response.raise_for_status()
 
+            yield "Answer: "
+
             for line in response.iter_lines():
                 if line:
                     try:
@@ -123,6 +147,8 @@ ANSWER (cite sources using [Source N] format):"""
                             yield token
                     except json.JSONDecodeError:
                         continue
+            
+            yield self._calculate_confidence_and_sources(results)
 
         except Exception as e:
             logger.error(f"LLM streaming failed: {e}")

@@ -7,22 +7,27 @@ A production-grade RAG system for medical document search and analysis. Processe
 ```
 ┌─────────────┐    ┌──────────────────────────────────────────────┐
 │   React UI  │───▶│  FastAPI Backend                             │
-│  (Vite)     │    │  ┌─────────┐  ┌────────┐  ┌──────────────┐  │
-│  • Chat     │    │  │ Safety  │─▶│ Agent  │─▶│  Phi-3 Mini  │  │
-│  • Upload   │    │  │ Guard   │  │(Graph) │  │  (Ollama)    │  │
-│  • Sources  │    │  └─────────┘  └───┬────┘  └──────────────┘  │
-│  • Model    │    │                   │                          │
-│    Info     │    │  ┌────────────────▼──────────────────────┐   │
-└─────────────┘    │  │     Hybrid Retriever                  │   │
-                   │  │  ┌─────────┐  ┌───────┐  ┌────────┐  │   │
-                   │  │  │ Dense   │  │ BM25  │  │  RRF   │  │   │
-                   │  │  │ Search  │  │Search │  │ Fusion │  │   │
-                   │  │  └────┬────┘  └───┬───┘  └────────┘  │   │
-                   │  └───────┼───────────┼──────────────────┘   │
+│  (Vite)     │    │  ┌────────────────────────────────────┐      │
+│  • Chat     │    │  │ LangGraph Orchestration (graph.py) │      │
+│  • Upload   │    │  │ 1. Extract Entities                │      │
+│  • Sources  │    │  │ 2. Query Expansion (HyDE)          │      │
+│  • Model    │    │  │ 3. Hybrid Retrieval (BM25 + Dense) │      │
+│    Info     │    │  │ 4. Assemble Parent/Child Context   │      │
+└─────────────┘    │  │ 5. Jailbreak Safety Check          │      │
+                   │  │ 6. LLM Generation                  │      │
+                   │  └──────────────────┬─────────────────┘      │
+                   │                     │                        │
+                   │  ┌──────────────────▼─────────────────┐      │
+                   │  │     Hybrid Retriever (RRF)         │      │
+                   │  │  ┌─────────┐  ┌───────┐            │      │
+                   │  │  │ Dense   │  │ BM25  │            │      │
+                   │  │  │ Search  │  │Search │            │      │
+                   │  │  └────┬────┘  └───┬───┘            │      │
+                   │  └───────┼───────────┼────────────────┘      │
                    │          │           │                       │
-                   │  ┌───────▼───────────▼──────────────────┐   │
-                   │  │  ChromaDB + all-MiniLM-L6-v2         │   │
-                   │  └──────────────────────────────────────┘   │
+                   │  ┌───────▼───────────▼──────────────────┐    │
+                   │  │ ChromaDB (cosine) + all-MiniLM-L6-v2 │    │
+                   │  └──────────────────────────────────────┘    │
                    └──────────────────────────────────────────────┘
 ```
 
@@ -33,11 +38,12 @@ A production-grade RAG system for medical document search and analysis. Processe
 | **PDF Ingestion** | PyMuPDF extraction → preprocessing → structure detection |
 | **Chunking** | 5 strategies: recursive, token, markdown, semantic, parent-child |
 | **Embeddings** | `all-MiniLM-L6-v2` (384 dims) via sentence-transformers |
-| **Vector DB** | ChromaDB with cosine similarity |
-| **Retrieval** | Dense + BM25 hybrid with Reciprocal Rank Fusion |
+| **Vector DB** | ChromaDB implementing dense **cosine similarity** |
+| **Retrieval** | Dense + BM25 hybrid with Reciprocal Rank Fusion (RRF) |
 | **Query Expansion** | HyDE + MultiQuery via LLM |
 | **LLM** | Phi-3 Mini (3.8B) via Ollama, temperature 0.2 |
-| **Agent** | LangGraph state machine: safety → retrieve → [expand] → generate |
+| **Agent** | LangGraph explicit orchestration layer (Query → Entities → Expander → Hybrid → RRF → Parent-Child → Context → Jailbreak → Generator) |
+| **Tracing** | Deep tracing integration natively through LangSmith |
 | **Security** | Jailbreak detection, prompt injection prevention |
 | **Evaluation** | Precision@k, Recall@k, MRR, context relevance |
 | **Frontend** | React (Vite) with SSE streaming, citations, document upload |

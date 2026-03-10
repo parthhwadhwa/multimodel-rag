@@ -2,12 +2,35 @@ import React from "react";
 
 export default function Header() {
     return (
-        <header className="w-full py-12 flex flex-col items-center justify-center fade-in">
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#f8fafc] mb-3">
-                ⚗️ PharmaGuide
+        <header
+            style={{
+                width: "100%",
+                borderBottom: "1px solid var(--border)",
+                background: "var(--header-bg)",
+                padding: "16px 24px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+            }}
+        >
+            <h1
+                style={{
+                    fontSize: "20px",
+                    fontWeight: 600,
+                    color: "var(--text-primary)",
+                    margin: 0,
+                }}
+            >
+                💊 PharmaGuide
             </h1>
-            <p className="text-[14px] md:text-[15px] text-slate-400 font-medium tracking-wide">
-                Grounded Drug Information
+            <p
+                style={{
+                    fontSize: "13px",
+                    color: "var(--text-secondary)",
+                    marginTop: "4px",
+                }}
+            >
+                AI-powered Drug Information Assistant
             </p>
         </header>
     );

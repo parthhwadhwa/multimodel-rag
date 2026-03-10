@@ -2,15 +2,15 @@ from typing import TypedDict, List, Dict, Any, Literal
 from langgraph.graph import StateGraph, END
 
 from backend.utils.datatypes import RetrievalResult
-from backend.agents.safety_guard import SafetyGuard
-from backend.agents.llm_client import LLMClient
+from backend.rag.safety_guard import SafetyGuard
+from backend.rag.llm_client import LLMClient
 from backend.retrieval.hybrid_retriever import HybridRetriever
 from backend.retrieval.query_expander import QueryExpander
 from backend.utils.logger import logger
 from backend.utils.config import CONFIG
 
 # Import the LangChain wrappers - for now keeping context strictly as internal types until returning
-from backend.langchain_integration.wrappers import to_langchain_documents
+from backend.rag.wrappers import to_langchain_documents
 
 
 class OrchestratorState(TypedDict):

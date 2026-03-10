@@ -8,8 +8,8 @@ import operator
 from langgraph.graph import StateGraph, END
 
 from backend.utils.datatypes import RetrievalResult, QueryState
-from backend.agents.llm_client import LLMClient
-from backend.agents.safety_guard import SafetyGuard
+from backend.rag.llm_client import LLMClient
+from backend.rag.safety_guard import SafetyGuard
 from backend.retrieval.hybrid_retriever import HybridRetriever
 from backend.retrieval.query_expander import QueryExpander
 from backend.utils.config import CONFIG

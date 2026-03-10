@@ -109,27 +109,6 @@ export default function ResponseCard({ query, response, citations, confidenceSco
                         <FormattedResponse text={response} />
                     </div>
 
-                    <div className="pt-6 border-t border-[#334155]/60">
-                        {confidenceScore !== undefined && confidenceScore !== null && (
-                            <p className="text-[15px] text-slate-300 font-medium mb-4">
-                                Confidence: {confidenceScore}%
-                            </p>
-                        )}
-
-                        {citations && citations.length > 0 && (
-                            <div className="text-[14px] text-slate-400">
-                                <strong className="block mb-3 text-slate-300 text-[15px]">Sources</strong>
-                                <ul className="list-disc pl-5 space-y-1.5 ml-1">
-                                    {citations.map((c, i) => (
-                                        <li key={i} className="leading-snug">
-                                            {c.document} (page {c.page})
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-
                     <div className="mt-6">
                         <MetadataBar modelUsed={modelUsed} />
                     </div>

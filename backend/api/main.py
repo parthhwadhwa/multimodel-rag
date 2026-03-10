@@ -18,8 +18,8 @@ from backend.utils.datatypes import ChunkingStrategy
 
 # Pipeline imports
 from backend.ingestion.pdf_loader import PDFLoader
-from backend.ingestion.preprocessor import TextPreprocessor
-from backend.ingestion.structure_detector import StructureDetector
+from backend.preprocessing.preprocessor import TextPreprocessor
+from backend.preprocessing.structure_detector import StructureDetector
 from backend.chunking.chunking_manager import ChunkingManager
 from backend.embeddings.embeddings import EmbeddingEngine
 from backend.vectorstore.chroma_store import ChromaStore
@@ -27,8 +27,8 @@ from backend.retrieval.dense_retriever import DenseRetriever
 from backend.retrieval.bm25_retriever import BM25Retriever
 from backend.retrieval.hybrid_retriever import HybridRetriever
 from backend.retrieval.query_expander import QueryExpander
-from backend.agents.llm_client import LLMClient
-from backend.agents.rag_agent import RAGAgent
+from backend.rag.llm_client import LLMClient
+from backend.rag.rag_agent import RAGAgent
 from backend.evaluation.evaluator import RAGEvaluator
 
 # --- App ---
@@ -329,4 +329,4 @@ async def model_info():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.api:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("backend.api.main:app", host="0.0.0.0", port=8000, reload=True)
